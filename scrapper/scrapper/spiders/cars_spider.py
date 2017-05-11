@@ -18,10 +18,10 @@ class UrlsSpider(scrapy.Spider):
         brands = response.css('.row.footerbrands > .a_footer::text').extract()
         urls = response.css('.row.footerbrands > .a_footer::attr(href)').extract()
 
-        for brand, url in zip(brands[:3], urls[:3]):
-            img_spider = ImagesSpider(brand)
-            scrapy.Request(url, callback=img_spider.parse)
+        for brand, url in zip(brands, urls):
             time.sleep(5)
+            img_spider = ImagesSpider(brand)
+            yield scrapy.Request(url, callback=img_spider.parse)
 
 
 class ImagesSpider(scrapy.Spider):
@@ -31,14 +31,18 @@ class ImagesSpider(scrapy.Spider):
     def __init__(self, brand):
         super(ImagesSpider, self).__init__()
         self.brand = brand
-        print('init')
 
     def parse(self, response):
         self.log('Scrapping: {}({})'.format(self.brand, response.url))
         images = response.css('.models > div.col-4 > a > img::attr(src)').extract()
         print('parsing')
 
-        for img_url in images[:3]:
+        for img_url in images:
+            # skip empty image
+            if img_url.endswith('no-image-170x113.jpg'):
+                self.log('Skipping empty image: {}'.format(img_url))
+                continue
+
             # skip image if it already in DB
             try:
                 Image.objects.get(pk=img_url)
@@ -49,7 +53,8 @@ class ImagesSpider(scrapy.Spider):
 
             img = Image(url=img_url,
                         is_car=True,
-                        is_test=random.randint(1,100) < 10)
+                        test_set=random.randint(1, 100) < 10,
+                        brand=self.brand)
             
             img.save()
             print('saved: ', img_url)
