@@ -1,32 +1,25 @@
-from urllib.request import urlopen
-from io import BytesIO
-
-import tensorflow as tf
-from PIL import Image
-
-from .models import Image as DataImage
+from .models import Image
 
 
 class ImageSet(object):
-    def get_train_batch(self, amount):
+    @staticmethod
+    def get_batch(amount=None, test=False):
         """Returns 'amount' random images as vectors with answers"""
-        training_set = DataImage.objects.filter(test_set=False).order_by('?')
+        training_set = Image.objects.filter(test_set=test).order_by('?')
+
+        if amount:
+            training_set = training_set[:amount]
 
         imgs = []
         labels = []
 
+        i = 0
         for img in training_set:
-            file = BytesIO(urlopen(img.url).read())
-            image = Image.open(file)
-
-            img_vector = []
-            for pixel in image:
-                img_vector.append(pixel[0]/255)
+            i += 1
+            print('Processing image {}'.format(i))
+            img_vector = img.get_vector()
 
             imgs.append(img_vector)
-            labels.append(int(img.is_car))
-
-        imgs = tf.constant(imgs)
-        labels = tf.constant(labels)
+            labels.append([int(not img.is_car), int(img.is_car)])
 
         return imgs, labels
