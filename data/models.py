@@ -12,8 +12,8 @@ class Image(mongoengine.Document):
     url = mongoengine.URLField(primary_key=True)
     is_car = mongoengine.BooleanField()
     test_set = mongoengine.BooleanField()
-    brand = mongoengine.StringField(max_length=256)
-    vector = mongoengine.ListField(mongoengine.FloatField(), null=True)
+    brand = mongoengine.StringField(max_length=256, null=True)
+    vector = mongoengine.ListField(mongoengine.FloatField())
 
     def get(self):
         file = BytesIO(urlopen(self.url).read())
@@ -23,11 +23,7 @@ class Image(mongoengine.Document):
 
         return image
 
-    def get_vector(self):
-        print(bool(self.vector))
-        if self.vector:
-            return self.vector
-
+    def update_vector(self):
         image = self.get()
         vector = []
 
@@ -35,6 +31,15 @@ class Image(mongoengine.Document):
             vector.append(pixel[0] / 255)
 
         self.vector = vector
-        self.save()
 
         return self.vector
+
+    def save(self, force_insert=False, validate=True, clean=True,
+             write_concern=None, cascade=None, cascade_kwargs=None,
+             _refs=None, save_condition=None, signal_kwargs=None, **kwargs):
+
+        self.update_vector()
+
+        return super(Image, self).save(force_insert, validate, clean,
+             write_concern, cascade, cascade_kwargs,
+             _refs, save_condition, signal_kwargs, **kwargs)
