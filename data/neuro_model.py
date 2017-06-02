@@ -91,7 +91,7 @@ class Neuro(object):
             batch = ImageSet.get_batch(amount=100)
             train_step.run(feed_dict={self.x: batch[0], self.y_: batch[1], self.keep_prob: 0.5})
 
-            if i + 1 % 100 == 0:
+            if (i + 1) % 100 == 0:
                 test_batch = ImageSet.get_batch(test=True)
                 acc = accuracy.eval(feed_dict={self.x: test_batch[0], self.y_: test_batch[1], self.keep_prob: 1.0})
                 print(f"step {i+1}, training accuracy {acc}")
