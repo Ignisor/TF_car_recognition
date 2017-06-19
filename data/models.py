@@ -13,7 +13,10 @@ class Image(mongoengine.Document):
     is_car = mongoengine.BooleanField()
     test_set = mongoengine.BooleanField()
     brand = mongoengine.StringField(max_length=256, null=True)
-    vector = mongoengine.ListField(mongoengine.FloatField())
+
+    R_vector = mongoengine.ListField(mongoengine.FloatField())
+    G_vector = mongoengine.ListField(mongoengine.FloatField())
+    B_vector = mongoengine.ListField(mongoengine.FloatField())
 
     def get(self):
         file = BytesIO(urlopen(self.url).read())
@@ -25,14 +28,18 @@ class Image(mongoengine.Document):
 
     def update_vector(self):
         image = self.get()
-        vector = []
+        R_vector = []
+        G_vector = []
+        B_vector = []
 
         for pixel in image.getdata():
-            vector.append(pixel[0] / 255)
+            R_vector.append(pixel[0] / 255)
+            G_vector.append(pixel[1] / 255)
+            B_vector.append(pixel[2] / 255)
 
-        self.vector = vector
-
-        return self.vector
+        self.R_vector = R_vector
+        self.G_vector = G_vector
+        self.B_vector = B_vector
 
     def save(self, force_insert=False, validate=True, clean=True,
              write_concern=None, cascade=None, cascade_kwargs=None,

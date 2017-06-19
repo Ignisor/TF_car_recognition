@@ -1,6 +1,7 @@
 from urllib.request import urlopen
 from io import BytesIO
 from PIL import Image as PIL_Image
+import time
 
 import tensorflow as tf
 from tensorflow.python.framework.errors_impl import NotFoundError
@@ -11,11 +12,11 @@ from data.dataset import ImageSet
 
 class Neuro(object):
     def __init__(self):
-        self.x = tf.placeholder(tf.float32, shape=[None, 64 * 64])
-        x_image = tf.reshape(self.x, [-1, 64, 64, 1])
+        self.x = tf.placeholder(tf.float32, shape=[None, 64 * 64, 3])
+        x_image = tf.reshape(self.x, [-1, 64, 64, 3])
 
         # First layer:
-        W_conv1 = self.weight_variable([5, 5, 1, 32])
+        W_conv1 = self.weight_variable([5, 5, 3, 32])
         b_conv1 = self.bias_variable([32])
 
         h_conv1 = tf.nn.relu(self.conv2d(x_image, W_conv1) + b_conv1)
@@ -88,8 +89,14 @@ class Neuro(object):
 
         for i in range(steps):
             print(f"started {i+1} training")
+
+            t = time.time()
             batch = ImageSet.get_batch(amount=100)
+            print(f"data got in: {time.time() - t:.2f}s")
+
+            t = time.time()
             train_step.run(feed_dict={self.x: batch[0], self.y_: batch[1], self.keep_prob: 0.5})
+            print(f"train step took: {time.time() - t:.2f}s")
 
             if (i + 1) % 100 == 0:
                 test_batch = ImageSet.get_batch(test=True)
@@ -111,9 +118,9 @@ class Neuro(object):
 
         vector = []
         for pixel in image.getdata():
-            vector.append(pixel[0] / 255)
+            vector.append(tuple((color/255 for color in pixel[:3])))
 
-        vector = array(vector).reshape(1, 64 * 64)
+        vector = array(vector).reshape(1, 64 * 64, 3)
 
         softmax = tf.nn.softmax(logits=self.y_conv)
 
