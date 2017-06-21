@@ -101,4 +101,6 @@ ENV/
 # VS Code
 **/.vscode
 
+# Data
 data/saved
+data/cifar-10_dataset
