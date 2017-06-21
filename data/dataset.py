@@ -1,5 +1,6 @@
 import time
 import random
+import pickle
 
 from pymongo import MongoClient
 
@@ -39,3 +40,47 @@ class ImageSet(object):
             labels.append([int(not img['is_car']), int(img['is_car'])])
 
         return imgs, labels
+
+
+class CifarImageSet(object):
+    @staticmethod
+    def unpickle(file):
+        with open(file, 'rb') as fo:
+            dict = pickle.load(fo, encoding='bytes')
+        return dict
+
+    @staticmethod
+    def get_batch(amount=None, test=False):
+        if test:
+            path = 'data/cifar-10_dataset/test_batch'
+        else:
+            path = f'data/cifar-10_dataset/data_batch_{random.randrange(1,6)}'
+
+        batch = CifarImageSet.unpickle(path)
+
+        if amount:
+            data = batch[b'data']
+            data_labels = batch[b'labels']
+            left = random.randrange(0, len(data) - amount)
+            right = left + amount
+
+            data = data[left:right]
+            data_labels = data_labels[left:right]
+        else:
+            data = batch[b'data']
+            data_labels = batch[b'labels']
+
+        images = []
+        labels = []
+        for image, label in zip(data, data_labels):
+            img_vector = []
+            for i in range(1024):
+                # make image bigger
+                pix = (image[i], image[1024 + i], image[2048 + i])
+                for _ in range(4):
+                    img_vector.append(pix)
+
+            images.append(img_vector)
+            labels.append([int(label != 1), int(label == 1)])
+
+        return images, labels

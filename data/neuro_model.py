@@ -7,7 +7,7 @@ import tensorflow as tf
 from tensorflow.python.framework.errors_impl import NotFoundError
 from numpy import array
 
-from data.dataset import ImageSet
+from data.dataset import ImageSet, CifarImageSet
 
 
 class Neuro(object):
@@ -91,7 +91,7 @@ class Neuro(object):
             print(f"started {i+1} training")
 
             t = time.time()
-            batch = ImageSet.get_batch(amount=100)
+            batch = CifarImageSet.get_batch(amount=100)
             print(f"data got in: {time.time() - t:.2f}s")
 
             t = time.time()
@@ -99,18 +99,19 @@ class Neuro(object):
             print(f"train step took: {time.time() - t:.2f}s")
 
             if (i + 1) % 100 == 0:
-                test_batch = ImageSet.get_batch(test=True)
+                test_batch = CifarImageSet.get_batch(amount=1000, test=True)
                 acc = accuracy.eval(feed_dict={self.x: test_batch[0], self.y_: test_batch[1], self.keep_prob: 1.0})
                 print(f"step {i+1}, training accuracy {acc}")
                 self.saver.save(self.sess, "data/saved/model.ckpt")
 
-        test_batch = ImageSet.get_batch(test=True)
+        test_batch = CifarImageSet.get_batch(amount=1000, test=True)
         test_acc = accuracy.eval(feed_dict={self.x: test_batch[0], self.y_: test_batch[1], self.keep_prob: 1.0})
         print(f"Test accuracy {test_acc}")
 
         self.saver.save(self.sess, "data/saved/model.ckpt")
 
     def is_car(self, image_url):
+        t = time.time()
         file = BytesIO(urlopen(image_url).read())
 
         image = PIL_Image.open(file)
@@ -122,10 +123,13 @@ class Neuro(object):
 
         vector = array(vector).reshape(1, 64 * 64, 3)
 
+        print(f"Image processing took: {time.time() - t:.2f}s")
+
+        t = time.time()
         softmax = tf.nn.softmax(logits=self.y_conv)
 
         result = self.sess.run(softmax, feed_dict={self.x: vector, self.keep_prob: 1.0})[0]
-
+        print(f"Neural network took: {time.time() - t:.2f}s")
         print(result)
 
         if result[0] > result[1]:
